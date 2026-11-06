@@ -1,0 +1,26 @@
+---
+import Icon from "@/components/ui/Icon.astro";
+import { readMinutes, type Post } from "@/lib/posts";
+
+/**
+ * "4 min read" as a smoked pill on the cover, rather than a third fact on the
+ * credit line. It costs the card no vertical space, it lands in the same
+ * corner on every card in a row, and it leaves the line under the picture to
+ * carry the date and the byline alone.
+ *
+ * The number is counted from the post body at build time — see
+ * `readMinutes` — so nothing here is maintained by hand.
+ */
+interface Props {
+  post: Post;
+  class?: string;
+}
+
+const { post, class: className = "" } = Astro.props;
+const minutes = readMinutes(post);
+---
+
+<span class:list={["badge", className]}>
+  <Icon name="clock" size={13} />
+  {minutes} min read
+</span>

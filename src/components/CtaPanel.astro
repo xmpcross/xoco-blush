@@ -1,0 +1,43 @@
+---
+import SubscribeForm from "@/components/SubscribeForm.astro";
+import Icon from "@/components/ui/Icon.astro";
+import { siteConfig } from "@/config/site";
+
+/**
+ * The block that closes the front page. It asks for an email address when a
+ * newsletter provider is configured, and points at the archive when one is
+ * not — so the panel is never a dead form, and a theme shipped with the
+ * newsletter switched off still ends the page on something to do.
+ */
+interface Props {
+  id?: string;
+  class?: string;
+}
+
+const { id = "home-cta", class: className = "" } = Astro.props;
+const newsletter = siteConfig.newsletter;
+const isConfigured = newsletter.enabled && newsletter.action.trim().length > 0;
+---
+
+<section class:list={["cta", className]} aria-labelledby={`${id}-title`}>
+  <h2 class="txt-h2 cta__title" id={`${id}-title`}>
+    {isConfigured ? newsletter.title : "Everything we have published, in one place."}
+  </h2>
+  <p class="txt-m cta__body">
+    {
+      isConfigured
+        ? newsletter.description
+        : siteConfig.bio
+    }
+  </p>
+  {
+    isConfigured ? (
+      <SubscribeForm id={`${id}-email`} class="cta__form" />
+    ) : (
+      <a class="btn btn--lg" href="/posts/">
+        Browse the archive
+        <Icon name="arrow-right" size={16} />
+      </a>
+    )
+  }
+</section>

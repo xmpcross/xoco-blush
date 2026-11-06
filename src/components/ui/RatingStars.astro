@@ -1,0 +1,80 @@
+---
+import { formatRating, RATING_MAX, ratingFraction } from "@/config/rating";
+
+/**
+ * The star row a review carries everywhere it appears — cards, ledger rows,
+ * the front page, the article header, the verdict panel.
+ *
+ * Two identical rows of marks are stacked, and the filled one is clipped to the
+ * rating. That is what makes a half star exact at any size without a second
+ * glyph, a gradient, or an `id` that would have to be unique on a page carrying
+ * a dozen of these.
+ *
+ * The marks are hidden from assistive technology and the row is labelled
+ * instead, so a screen reader hears "4.5 out of 5 stars" rather than ten stars.
+ */
+interface Props {
+  value: number;
+  /** `sm` on cards and rows, `md` in an article header, `lg` on the verdict. */
+  size?: "sm" | "md" | "lg";
+  /** Prints the number beside the marks. Off on cards, where stars are enough. */
+  showValue?: boolean;
+  /** Set when the row sits on cover imagery and has to carry its own contrast. */
+  onImage?: boolean;
+  class?: string;
+}
+
+/*
+ * `...rest` matters more than it looks: when a parent passes this component a
+ * class from its own scoped stylesheet, Astro sends the scope attribute along
+ * as a prop. Without spreading it onto the root element the attribute is
+ * dropped, Astro prunes the "unused" rule, and the parent's positioning
+ * quietly disappears from the build.
+ */
+const {
+  value,
+  size = "sm",
+  showValue = false,
+  onImage = false,
+  class: className = "",
+  ...rest
+} = Astro.props;
+
+const marks = Array.from({ length: RATING_MAX }, (_, index) => index);
+const label = `${formatRating(value)} out of ${RATING_MAX} stars`;
+---
+
+<span
+  class:list={["stars", `stars--${size}`, onImage && "stars--onImage", className]}
+  style={`--stars-fill: ${(ratingFraction(value) * 100).toFixed(2)}%`}
+  {...rest}
+>
+  <span class="stars__marks" role="img" aria-label={label}>
+    <span class="stars__layer" aria-hidden="true">
+      {
+        marks.map(() => (
+          <svg viewBox="0 0 24 24" fill="currentColor" focusable="false">
+            <path d="M12 17.3 5.8 21l1.7-7-5.4-4.7 7.1-.6L12 2l2.8 6.7 7.1.6-5.4 4.7 1.7 7z" />
+          </svg>
+        ))
+      }
+    </span>
+    <span class="stars__layer stars__layer--fill" aria-hidden="true">
+      {
+        marks.map(() => (
+          <svg viewBox="0 0 24 24" fill="currentColor" focusable="false">
+            <path d="M12 17.3 5.8 21l1.7-7-5.4-4.7 7.1-.6L12 2l2.8 6.7 7.1.6-5.4 4.7 1.7 7z" />
+          </svg>
+        ))
+      }
+    </span>
+  </span>
+
+  {
+    showValue && (
+      <span class="stars__value nums" aria-hidden="true">
+        {formatRating(value)}
+      </span>
+    )
+  }
+</span>

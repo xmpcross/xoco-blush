@@ -1,0 +1,217 @@
+---
+import { Image } from "astro:assets";
+import CategoryTag from "@/components/CategoryTag.astro";
+import PostMeta from "@/components/ui/PostMeta.astro";
+import RatingStars from "@/components/ui/RatingStars.astro";
+import { postHref, type Post } from "@/lib/posts";
+import { postRating } from "@/lib/reviews";
+
+/**
+ * The front page opening: a full-bleed banner slideshow of the pinned stories,
+ * with a strip of four short ones under it.
+ *
+ * The banner runs edge to edge and the header rides on top of it — the page
+ * sets `has-overlay-header` on <body>, which strips the bar back to white type
+ * on the photograph. The four cards below it then say how much else is here,
+ * which is the question a magazine front page has to answer before it earns a
+ * scroll.
+ *
+ * The ticks in the banner's corner are its only control — each is a button
+ * that jumps to its slide, and the active one fills over the autoplay
+ * interval, so the same mark shows where you are, how long is left, and where
+ * you can go. Arrows would add two more targets to say what the ticks already
+ * say.
+ */
+interface Props {
+  posts: Post[];
+  /** The four short stories under the banner. */
+  strip?: Post[];
+  /** Autoplay interval in ms; the tick fill is timed to match. */
+  duration?: number;
+  limit?: number;
+}
+
+const { posts, strip = [], duration = 5000, limit = 3 } = Astro.props;
+const slides = posts.slice(0, limit);
+---
+
+{
+  slides.length > 0 && (
+    <>
+      <section
+        class="hero"
+        aria-roledescription="carousel"
+        aria-label="Featured stories"
+        data-hero
+        style={`--hero-duration:${duration}ms`}
+      >
+        {slides.map((post, index) => (
+          <div class:list={["hero__media", index === 0 && "is-active"]} data-hero-media>
+            <Image
+              src={post.data.cover.src}
+              alt=""
+              widths={[720, 1080, 1440, 1920, 2400]}
+              sizes="100vw"
+              loading={index === 0 ? "eager" : "lazy"}
+              fetchpriority={index === 0 ? "high" : undefined}
+              decoding="async"
+            />
+          </div>
+        ))}
+
+        <div class="hero__scrim" aria-hidden="true" />
+
+        <div class="container hero__ui opener">
+          {/* Every panel sits in the same grid cell, so the stage is as tall as
+              the longest headline and nothing shifts as the slides change. */}
+          <div class="hero__stage">
+            {slides.map((post, index) => {
+              /* Only a scored review has one, so every other slide is untouched. */
+              const rating = postRating(post);
+
+              return (
+                <article
+                  class:list={["hero__panel", index === 0 && "is-active"]}
+                  data-hero-panel
+                  inert={index !== 0}
+                >
+                  <div class="chip-row">
+                    <CategoryTag category={post.data.category} variant="glass" />
+                    {rating !== undefined && <RatingStars value={rating} size="md" onImage />}
+                  </div>
+                  <h2 class="txt-d hero__title">
+                    <a href={postHref(post)}>{post.data.title}</a>
+                  </h2>
+                  <p class="txt-l hero__excerpt">{post.data.excerpt}</p>
+                  <PostMeta post={post} class="meta--onDark hero__meta" inline dateOnly />
+                </article>
+              );
+            })}
+          </div>
+
+          {slides.length > 1 && (
+            <div class="hero__progress" data-hero-progress>
+              {slides.map((post, index) => (
+                <button
+                  type="button"
+                  class:list={["hero__tick", index === 0 && "is-active"]}
+                  data-hero-go={index}
+                  aria-current={index === 0 ? "true" : undefined}
+                >
+                  <span class="sr-only">{`Show story ${index + 1}: ${post.data.title}`}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {strip.length > 0 && (
+        <div class="container homelede">
+          {/* Below the fold on most screens, so it reveals on scroll rather
+              than animating in with the banner. */}
+          <div class="lede-strip reveal">
+            {strip.map((post) => (
+              <article class="lede">
+                {/* No section chip here: at 5rem wide the thumbnail is a
+                    marker rather than an image, and a pill would cover most
+                    of it. The strip is dated contents, not a card row. */}
+                <div class="lede__media">
+                  <Image
+                    src={post.data.cover.src}
+                    alt=""
+                    widths={[120, 180, 240, 340]}
+                    sizes="5.25rem"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
+                <a class="hit" href={postHref(post)} aria-label={post.data.title} />
+                <div class="lede__body">
+                  <PostMeta post={post} inline dateOnly />
+                  <h3 class="txt-h4 lede__title line-clamp-2">{post.data.title}</h3>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+<script>
+  document.querySelectorAll<HTMLElement>("[data-hero]").forEach((hero) => {
+    const media = Array.from(hero.querySelectorAll<HTMLElement>("[data-hero-media]"));
+    const panels = Array.from(hero.querySelectorAll<HTMLElement>("[data-hero-panel]"));
+    const ticks = Array.from(hero.querySelectorAll<HTMLButtonElement>("[data-hero-go]"));
+    if (panels.length < 2) return;
+
+    /* With motion reduced the fill never runs, so no animationend ever fires
+       and the slideshow simply holds on whichever slide you choose. */
+    let index = 0;
+
+    const show = (next: number) => {
+      index = (next + panels.length) % panels.length;
+
+      media.forEach((item, i) => item.classList.toggle("is-active", i === index));
+
+      panels.forEach((panel, i) => {
+        const active = i === index;
+        panel.classList.toggle("is-active", active);
+        /* `inert` takes the whole slide out of the tab order and the
+           accessibility tree, so there is no per-link tabindex bookkeeping. */
+        panel.inert = !active;
+      });
+
+      ticks.forEach((tick, i) => {
+        /* Restart the fill animation on the newly active tick. */
+        tick.classList.remove("is-active", "is-done");
+        void tick.offsetWidth;
+        if (i < index) tick.classList.add("is-done");
+        if (i === index) {
+          tick.classList.add("is-active");
+          tick.setAttribute("aria-current", "true");
+        } else {
+          tick.removeAttribute("aria-current");
+        }
+      });
+    };
+
+    /*
+     * The filling tick *is* the timer. Advancing on its `animationend` rather
+     * than on a parallel setTimeout means the bar and the slide can never
+     * disagree — and pausing is one class, because a paused animation stops
+     * both at once.
+     */
+    ticks.forEach((tick, i) => {
+      tick.addEventListener("click", () => show(i));
+      tick.addEventListener("animationend", () => {
+        if (i === index) show(index + 1);
+      });
+    });
+
+    const pause = () => hero.classList.add("is-paused");
+    const play = () => hero.classList.remove("is-paused");
+
+    /*
+     * Hover holds the slide only over the type and the ticks — not over the
+     * whole section. The banner fills most of the viewport, so a pointer
+     * resting anywhere on the picture would otherwise stop the slideshow
+     * indefinitely.
+     */
+    const holdZone = hero.querySelector<HTMLElement>(".hero__ui");
+    holdZone?.addEventListener("mouseenter", pause);
+    holdZone?.addEventListener("mouseleave", play);
+    hero.addEventListener("focusin", pause);
+    hero.addEventListener("focusout", (event) => {
+      if (!hero.contains(event.relatedTarget as Node)) play();
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) pause();
+      else play();
+    });
+
+    show(0);
+  });
+</script>

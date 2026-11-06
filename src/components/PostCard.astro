@@ -1,0 +1,130 @@
+---
+import { Image } from "astro:assets";
+import CategoryTag from "@/components/CategoryTag.astro";
+import PostMeta from "@/components/ui/PostMeta.astro";
+import RatingStars from "@/components/ui/RatingStars.astro";
+import ReadBadge from "@/components/ui/ReadBadge.astro";
+import { postHref, type Post } from "@/lib/posts";
+import { postRating } from "@/lib/reviews";
+
+/**
+ * The workhorse. The section tag and, where a card carries one, the read time
+ * ride on the cover as smoked pills — which keeps the type below the picture
+ * down to a headline, an optional standfirst, and one credit line, the same
+ * three things in the same order on every card the theme draws.
+ */
+interface Props {
+  post: Post;
+  /**
+   * Date and nothing else: no byline under the picture and no read-time pill
+   * on it. The front page runs this way throughout — a card there is an
+   * invitation, and how recent a story is answers more of that than who filed
+   * it or how long it runs. The article page prints both.
+   */
+  dateOnly?: boolean;
+  /** The read-time pill on the cover. Ignored when `dateOnly` is set. */
+  showReadTime?: boolean;
+  /**
+   * `feature` — 4:3 cover above the headline and byline (the workhorse)
+   * `media`   — landscape thumbnail beside the headline and standfirst
+   */
+  variant?: "feature" | "media";
+  /** Loads the cover eagerly — set it on cards that render above the fold. */
+  eager?: boolean;
+  showExcerpt?: boolean;
+  showCategory?: boolean;
+  headingLevel?: "h2" | "h3" | "h4";
+  class?: string;
+}
+
+const {
+  post,
+  dateOnly = false,
+  showReadTime = true,
+  variant = "feature",
+  eager = false,
+  showExcerpt = false,
+  showCategory = true,
+  headingLevel = "h3",
+  class: className = "",
+} = Astro.props;
+
+const href = postHref(post);
+const data = post.data;
+const image = data.cover;
+const loading = eager ? "eager" : "lazy";
+const Heading = headingLevel;
+/* Only a scored review has one, so every other card is untouched. */
+const rating = postRating(post);
+const showRead = showReadTime && !dateOnly;
+/* With neither chip to carry, the row itself goes rather than sitting empty
+   over the top of the picture. */
+const showBadges = showCategory || showRead;
+---
+
+{
+  variant === "feature" && (
+    <article class:list={["card zoom-host", className]}>
+      <div class="media media--card">
+        <Image
+          src={image.src}
+          alt={image.alt}
+          widths={[320, 480, 720, 960, 1280]}
+          sizes="(min-width: 64rem) 400px, (min-width: 40rem) 45vw, 92vw"
+          loading={loading}
+          decoding="async"
+        />
+        {showBadges && (
+          <div class:list={["media-badges", !showCategory && "media-badges--end"]}>
+            {showCategory && <CategoryTag category={data.category} variant="glass" />}
+            {showRead && <ReadBadge post={post} />}
+          </div>
+        )}
+      </div>
+      <a class="hit" href={href} aria-label={data.title} />
+      <div class="card__body">
+        {rating !== undefined && (
+          <div class="chip-row">
+            <RatingStars value={rating} />
+          </div>
+        )}
+        <Heading class="txt-h3 card__title">{data.title}</Heading>
+        {showExcerpt && <p class="txt-s txt-dim line-clamp-2">{data.excerpt}</p>}
+        <PostMeta post={post} class="card__meta" inline showByline={!dateOnly} showReadTime={false} />
+      </div>
+    </article>
+  )
+}
+
+{
+  /* Thumbnail beside the type. Reads as a list rather than a grid, so a row of
+     two carries a set of six without the tiles shrinking. */
+  variant === "media" && (
+    <article class:list={["card-media", className]}>
+      <div class="card-media__media">
+        <Image
+          src={image.src}
+          alt=""
+          widths={[380, 560, 760, 1020]}
+          sizes="(min-width: 80rem) 17rem, (min-width: 48rem) 16rem, 46vw"
+          loading={loading}
+          decoding="async"
+        />
+        {showCategory && (
+          <span class="card-media__tag">
+            <CategoryTag category={data.category} variant="glass" linked={false} />
+          </span>
+        )}
+      </div>
+      <a class="hit" href={href} aria-label={data.title} />
+      <div class="card-media__body">
+        {rating !== undefined && <RatingStars value={rating} class="card-media__rating" />}
+        <Heading class="txt-h3 card-media__title">{data.title}</Heading>
+        {showExcerpt && (
+          <p class="txt-s txt-dim line-clamp-2 card-media__excerpt">{data.excerpt}</p>
+        )}
+        <PostMeta post={post} inline dateOnly={dateOnly} showReadTime={showReadTime} />
+      </div>
+    </article>
+  )
+}

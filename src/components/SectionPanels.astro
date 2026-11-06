@@ -1,0 +1,64 @@
+---
+import { Image } from "astro:assets";
+import Icon from "@/components/ui/Icon.astro";
+import { categoryMeta } from "@/config/categories";
+import { categorySlug, getByCategory, type Category, type Post } from "@/lib/posts";
+
+/**
+ * The site's table of contents. Each panel takes its artwork from the newest
+ * story in that section, so the row restages itself as the archive grows and
+ * there is no separate set of section covers to keep in sync.
+ *
+ * Every section is on screen at once — with six of them there is nothing to
+ * scroll to, and hiding half the site's navigation behind a control would be a
+ * poor trade. Sections with nothing published are skipped.
+ */
+interface Props {
+  categories: readonly Category[];
+  posts: Post[];
+  class?: string;
+}
+
+const { categories, posts, class: className = "" } = Astro.props;
+
+const panels = categories
+  .map((category) => ({
+    category,
+    slug: categorySlug(category),
+    description: categoryMeta[category].description,
+    cover: getByCategory(posts, category)[0]?.data.cover,
+  }))
+  .filter((panel) => panel.cover);
+---
+
+{/* Panels grow under the pointer or under focus and unfold their description as
+    they go. All CSS — `flex-grow` is the only thing animated, and
+    `:focus-within` gives the keyboard the same reveal the pointer gets. */}
+<div class:list={["sections-row", className]}>
+  {
+    panels.map((panel) => (
+      <a href={`/category/${panel.slug}/`} class="section-card">
+        <Image
+          src={panel.cover!.src}
+          alt=""
+          widths={[480, 720, 960, 1280, 1600]}
+          sizes="(min-width: 64rem) 42vw, 46vw"
+          loading="lazy"
+          decoding="async"
+        />
+        <span class="section-card__scrim" aria-hidden="true" />
+
+        <span class="section-card__body">
+          <span class="txt-h4 section-card__name">{panel.category}</span>
+          <span class="section-card__reveal">
+            <span class="txt-s section-card__blurb">{panel.description}</span>
+            <span class="label section-card__more">
+              Browse the section
+              <Icon name="arrow-right" size={14} />
+            </span>
+          </span>
+        </span>
+      </a>
+    ))
+  }
+</div>

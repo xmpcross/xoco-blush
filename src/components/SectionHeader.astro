@@ -1,0 +1,43 @@
+---
+import Icon from "@/components/ui/Icon.astro";
+
+/**
+ * Every section opens the same way: its name set large in the display face,
+ * with an optional count beside it and a link out on the right. The name is
+ * doing the announcing here, which is why it is the one piece of type on the
+ * page allowed to compete with a headline.
+ */
+interface Props {
+  title: string;
+  count?: string;
+  href?: string;
+  linkLabel?: string;
+  id?: string;
+  class?: string;
+}
+
+const { title, count, href, linkLabel = "View all", id, class: className = "" } = Astro.props;
+---
+
+<div class:list={["section-head", className]}>
+  <div class="section-head__bar">
+    <h2 class="section-head__name" id={id}>
+      {title}
+      {count && <span class="section-head__count txt-dim">{count}</span>}
+    </h2>
+    {
+      href && (
+        <a class="section-link" href={href}>
+          {linkLabel}
+          <Icon name="arrow-right" size={14} />
+        </a>
+      )
+    }
+  </div>
+</div>
+
+<style>
+  .section-head__count {
+    margin-left: 0.6rem;
+  }
+</style>

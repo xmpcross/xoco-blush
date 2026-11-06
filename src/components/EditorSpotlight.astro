@@ -1,0 +1,37 @@
+---
+import PostCard from "@/components/PostCard.astro";
+import type { Post } from "@/lib/posts";
+
+/**
+ * The editor's picks: one story given a full column of its own, and the rest
+ * listed beside it as thumbnails under hairlines.
+ *
+ * It is the one block on the front page with a hierarchy inside it. Everything
+ * above treats its stories as equals; this one says plainly that somebody
+ * chose, and the size of the lead card is the whole of that argument.
+ */
+interface Props {
+  posts: Post[];
+  /** Entries in the list beside the lead. */
+  limit?: number;
+  class?: string;
+}
+
+const { posts, limit = 3, class: className = "" } = Astro.props;
+const [lead, ...rest] = posts;
+const list = rest.slice(0, limit);
+---
+
+{
+  lead && (
+    <div class:list={["spotlight", className]}>
+      <PostCard post={lead} class="card--lead" headingLevel="h3" showExcerpt dateOnly />
+
+      <div class="spotlight__list">
+        {list.map((post) => (
+          <PostCard post={post} variant="media" headingLevel="h3" dateOnly showExcerpt />
+        ))}
+      </div>
+    </div>
+  )
+}

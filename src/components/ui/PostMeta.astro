@@ -1,0 +1,62 @@
+---
+import Byline from "@/components/ui/Byline.astro";
+import { formatDate, readMinutes, type Post } from "@/lib/posts";
+
+/**
+ * The credit line: "FEB 12, 2026" in grey, then "POST BY ELISE BOYD" with the
+ * name in ink. Two lines by default and one when `inline` is set, but the same
+ * tracked capitals either way, so a card, a column, and an article header all
+ * read alike.
+ *
+ * The date leads. On a magazine front page the useful question is how recent a
+ * story is, and putting the date first means every card in a row answers it at
+ * the same x-position — which a byline of varying length would not.
+ */
+interface Props {
+  post: Post;
+  /** The date alone — the front page reads this way throughout. */
+  dateOnly?: boolean;
+  showByline?: boolean;
+  showReadTime?: boolean;
+  /** Portraits ahead of the names. Off on cards, on in an article header. */
+  showAvatars?: boolean;
+  inline?: boolean;
+  class?: string;
+}
+
+const {
+  post,
+  dateOnly = false,
+  showByline = true,
+  showReadTime = true,
+  showAvatars = false,
+  inline = false,
+  class: className = "",
+} = Astro.props;
+const { date } = post.data;
+const withByline = showByline && !dateOnly;
+const withReadTime = showReadTime && !dateOnly;
+---
+
+<div class:list={["meta", inline && "meta--inline", className]}>
+  <p class="meta__facts meta__facts--ruled">
+    <time datetime={date.toISOString()}>{formatDate(date)}</time>
+    {withReadTime && <span class="meta__rule" aria-hidden="true" />}
+    {withReadTime && <span>{readMinutes(post)} min read</span>}
+  </p>
+  {
+    withByline && (
+      <Byline post={post} prefix prefixLabel="Post by" max={1} avatars={showAvatars} />
+    )
+  }
+</div>
+
+<style>
+  /* `Post by` and the name share a line, so the swap animation still has a box
+     to slide inside. */
+  .meta__byline > span {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.28em;
+  }
+</style>

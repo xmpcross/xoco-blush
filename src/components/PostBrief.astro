@@ -1,0 +1,38 @@
+---
+import PostMeta from "@/components/ui/PostMeta.astro";
+import RatingStars from "@/components/ui/RatingStars.astro";
+import { postHref, type Post } from "@/lib/posts";
+import { postRating } from "@/lib/reviews";
+
+/**
+ * A story with no picture: the credit line, then the headline. It is what
+ * makes the highlight columns affordable — nine stories for three photographs
+ * — and it is the block that quietly tells a reader the archive runs deeper
+ * than the covers around it.
+ */
+interface Props {
+  post: Post;
+  headingLevel?: "h3" | "h4";
+  class?: string;
+}
+
+const { post, headingLevel = "h3", class: className = "" } = Astro.props;
+const Heading = headingLevel;
+/* Only a scored review has one, so every other brief is untouched. */
+const rating = postRating(post);
+---
+
+<article class:list={["brief", className]}>
+  <PostMeta post={post} inline dateOnly />
+  <a class="hit" href={postHref(post)} aria-label={post.data.title} />
+  {rating !== undefined && <RatingStars value={rating} class="brief__rating" />}
+  <Heading class="txt-h4 brief__title">{post.data.title}</Heading>
+</article>
+
+<style>
+  /* A grid item is blockified, so the row would stretch across the column and
+     its marks would drift away from the headline without this. */
+  .brief__rating {
+    justify-self: start;
+  }
+</style>

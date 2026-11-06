@@ -1,0 +1,53 @@
+---
+import Icon from "@/components/ui/Icon.astro";
+import { siteConfig } from "@/config/site";
+
+/**
+ * The "how we test" band: a handful of figures on a dark ground, saying how
+ * the publication works before the reader reaches the reviews that depend on
+ * it. It is the one block on the front page that carries no story — a change
+ * of ground between two runs of photography. Copy lives in `siteConfig.standards`.
+ */
+interface Props {
+  id?: string;
+  class?: string;
+}
+
+const { id = "home-standards", class: className = "" } = Astro.props;
+const { standards } = siteConfig;
+---
+
+{
+  standards.items.length > 0 && (
+    <section class:list={["standards", className]} aria-labelledby={id}>
+      <div class="container standards__inner">
+        <div class="standards__lead">
+          <p class="label standards__eyebrow">{standards.eyebrow}</p>
+          <h2 class="txt-h2" id={id}>
+            {standards.title}
+          </h2>
+          <p class="txt-m standards__intro">{standards.intro}</p>
+          {standards.href && (
+            <a class="section-link" href={standards.href}>
+              {standards.linkLabel}
+              <Icon name="arrow-right" size={14} />
+            </a>
+          )}
+        </div>
+
+        <dl class="standards__grid">
+          {standards.items.map((item) => (
+            <div class="standards__item">
+              <dt class="txt-s standards__label">{item.label}</dt>
+              <dd class="standards__figure nums">
+                {item.figure}
+                {item.unit && <span class="standards__unit">{item.unit}</span>}
+              </dd>
+              {item.note && <dd class="txt-xs standards__note">{item.note}</dd>}
+            </div>
+          ))}
+        </dl>
+      </div>
+    </section>
+  )
+}

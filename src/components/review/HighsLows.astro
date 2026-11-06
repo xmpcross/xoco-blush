@@ -1,0 +1,52 @@
+---
+import type { ReviewData } from "@/lib/reviews";
+
+/**
+ * What the product is good at and what it is not, side by side and given equal
+ * room. Each column is tracked capitals over a single rule, then its findings
+ * set as a plain list — the marks and the spacing do the separating, so eight
+ * findings cost the page one line rather than ten.
+ *
+ * The mark is a `+` or a `−` rather than a colour, because Blush runs on one
+ * accent and a green-and-red pair here would teach a second colour language for
+ * the sake of one block. The column headings carry the meaning; the marks only
+ * reinforce it.
+ */
+interface Props {
+  review: ReviewData;
+  class?: string;
+}
+
+const { review, class: className = "", ...rest } = Astro.props;
+
+const columns = [
+  { key: "highs", label: "Highs", mark: "+", items: review.highs },
+  { key: "lows", label: "Lows", mark: "−", items: review.lows },
+] as const;
+---
+
+<section class:list={["judgement", className]} aria-labelledby="judgement-title" {...rest}>
+  <h2 id="judgement-title" class="sr-only">Highs and lows</h2>
+
+  {
+    columns.map((column) => (
+      <div class:list={["judgement__col", `judgement__col--${column.key}`]}>
+        <p id={`judgement-${column.key}`} class="label judgement__head">
+          {column.label}
+        </p>
+        {/* The list carries the name, not the wrapper, so a screen reader
+            announces "Highs, list, four items" on the way in. */}
+        <ul class="judgement__list" aria-labelledby={`judgement-${column.key}`}>
+          {column.items.map((item) => (
+            <li class="judgement__item">
+              <span class="judgement__mark" aria-hidden="true">
+                {column.mark}
+              </span>
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))
+  }
+</section>

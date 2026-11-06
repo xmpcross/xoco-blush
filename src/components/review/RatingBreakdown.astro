@@ -1,0 +1,82 @@
+---
+import RatingStars from "@/components/ui/RatingStars.astro";
+import { formatRating, RATING_MAX } from "@/config/rating";
+import { reviewRating, type ReviewData } from "@/lib/reviews";
+
+/**
+ * How the published rating was arrived at. Printing the workings is the point:
+ * a reader who thinks the seat matters more than the desk does can redo the
+ * arithmetic instead of arguing with the stars.
+ *
+ * Each criterion is a segmented meter — one cell per point of the scale — in
+ * the site accent over a grey track, so the block scans top to bottom by
+ * length alone; there is no score palette to learn. The overall closes the
+ * block above its one rule, stars and figure at display scale in the accent —
+ * the loudest ink in the block sits on the number the page publishes.
+ */
+interface Props {
+  review: ReviewData;
+  class?: string;
+}
+
+const { review, class: className = "", ...rest } = Astro.props;
+const criteria = review.ratings;
+const total = reviewRating(review);
+const cells = Array.from({ length: RATING_MAX }, (_, index) => index);
+/** How much of one meter cell a score fills: full, empty, or the half step. */
+const cellFill = (value: number, index: number) =>
+  Math.max(0, Math.min(1, value - index)) * 100;
+---
+
+{
+  criteria.length > 0 && (
+    <section class:list={["breakdown", className]} aria-labelledby="breakdown-title" {...rest}>
+      <div class="breakdown__head">
+        <h2 id="breakdown-title" class="txt-h3">
+          How it scored
+        </h2>
+      </div>
+
+      <ul class="breakdown__list">
+        {criteria.map((item) => (
+          <li class="breakdown__row">
+            <div class="breakdown__line">
+              <p class="label breakdown__label">
+                {item.label}
+                {(item.weight ?? 1) !== 1 && (
+                  <span class="breakdown__weight">&#215;{item.weight}</span>
+                )}
+              </p>
+              <p class="nums breakdown__value">
+                {formatRating(item.value)}
+                <span class="sr-only"> out of {RATING_MAX}</span>
+              </p>
+            </div>
+            <div class="breakdown__meter" aria-hidden="true">
+              {cells.map((index) => (
+                <span class="breakdown__cell">
+                  <span
+                    class="breakdown__cell-fill"
+                    style={`width: ${cellFill(item.value, index)}%`}
+                  />
+                </span>
+              ))}
+            </div>
+            {item.note && <p class="txt-s txt-dim breakdown__note">{item.note}</p>}
+          </li>
+        ))}
+      </ul>
+
+      <p class="breakdown__total">
+        <span class="label breakdown__total-label">Overall</span>
+        <span class="breakdown__total-score">
+          <RatingStars value={total} size="lg" class="breakdown__total-stars" />
+          <span class="nums breakdown__total-value">
+            {formatRating(total)}
+            <span class="breakdown__total-max">/{RATING_MAX}</span>
+          </span>
+        </span>
+      </p>
+    </section>
+  )
+}

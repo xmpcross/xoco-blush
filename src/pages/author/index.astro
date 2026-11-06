@@ -1,0 +1,35 @@
+---
+import { getCollection } from "astro:content";
+import AuthorList from "@/components/AuthorList.astro";
+import PageHeader from "@/components/PageHeader.astro";
+import SiteFooter from "@/components/SiteFooter.astro";
+import SiteHeader from "@/components/SiteHeader.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { siteConfig } from "@/config/site";
+import { getAllAuthors, visiblePosts } from "@/lib/posts";
+
+const allPosts = visiblePosts(await getCollection("posts"));
+const authors = getAllAuthors(allPosts);
+---
+
+<BaseLayout
+  title="Contributors"
+  description={`The writers behind ${siteConfig.name} and their latest stories.`}
+>
+  <SiteHeader posts={allPosts} />
+  <main id="content">
+    <div class="container">
+      <PageHeader
+        eyebrow="Masthead"
+        title="Contributors"
+        description={`Who files for ${siteConfig.name}, and what they cover.`}
+        meta={`${authors.length} ${authors.length === 1 ? "contributor" : "contributors"}`}
+      />
+    </div>
+
+    <section class="container section section-top" aria-label="Contributors">
+      <AuthorList authors={authors} columns={3} showBio />
+    </section>
+  </main>
+  <SiteFooter />
+</BaseLayout>

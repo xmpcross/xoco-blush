@@ -1,0 +1,110 @@
+---
+import { Image } from "astro:assets";
+import Icon from "@/components/ui/Icon.astro";
+import RatingStars from "@/components/ui/RatingStars.astro";
+import { formatRating, RATING_MAX, ratingBandFor } from "@/config/rating";
+import { postHref, type Post } from "@/lib/posts";
+import { isReview, reviewRating } from "@/lib/reviews";
+
+/**
+ * The verdicts. The newest scored review gets a panel of its own — product,
+ * rating, the bottom line, and who it is for — and the rest of the recent
+ * verdicts run in a ruled row beneath it. It is the one front-page block that
+ * prints a review's conclusion rather than its headline, which is what a
+ * reader deciding whether to buy something actually came for.
+ *
+ * Unscored posts are dropped at the door, so the block can be handed any
+ * slice of the archive and will only ever show reviews.
+ */
+interface Props {
+  posts: Post[];
+  /** Entries in the row under the lead. */
+  limit?: number;
+  class?: string;
+}
+
+const { posts, limit = 4, class: className = "" } = Astro.props;
+const reviews = posts.filter(isReview);
+const [lead, ...rest] = reviews;
+const list = rest.slice(0, limit);
+const leadRating = lead ? reviewRating(lead.data.review) : 0;
+const leadBand = ratingBandFor(leadRating);
+---
+
+{
+  lead && (
+    <div class:list={["verdicts", className]}>
+      <article class="verdict-lead">
+        <div class="verdict-lead__media">
+          <Image
+            src={lead.data.cover.src}
+            alt={lead.data.cover.alt}
+            widths={[480, 720, 960, 1280]}
+            sizes="(min-width: 64rem) 46rem, (min-width: 48rem) 50vw, 92vw"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+        <a class="hit" href={postHref(lead)} aria-label={lead.data.title} />
+        <div class="verdict-lead__body">
+          <p class="label txt-dim">
+            {lead.data.review.product.brand}
+            {lead.data.review.product.type && ` · ${lead.data.review.product.type}`}
+          </p>
+          <h3 class="txt-h2 verdict-lead__title">{lead.data.review.product.name}</h3>
+
+          <div class="verdict-lead__score">
+            <p class="verdict-lead__figure nums">
+              {formatRating(leadRating)}
+              <span class="verdict-lead__max">/{RATING_MAX}</span>
+            </p>
+            <div class="verdict-lead__band">
+              <RatingStars value={leadRating} size="md" />
+              <p class="txt-xs txt-dim">{leadBand.label}</p>
+            </div>
+          </div>
+
+          <p class="txt-m txt-dim line-clamp-4">{lead.data.review.verdict}</p>
+
+          {lead.data.review.buyIf && (
+            <div class="verdict-lead__call">
+              <p class="label">Buy it if</p>
+              <p class="txt-s">{lead.data.review.buyIf}</p>
+            </div>
+          )}
+
+          <span class="section-link verdict-lead__more">
+            Read the review
+            <Icon name="arrow-right" size={14} />
+          </span>
+        </div>
+      </article>
+
+      {list.length > 0 && (
+        <div class="verdict-list">
+          {list.map((post) => (
+            <article class="verdict-row">
+              <span class="verdict-row__thumb">
+                <Image
+                  src={post.data.cover.src}
+                  alt=""
+                  width={136}
+                  height={136}
+                  fit="cover"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </span>
+              <a class="hit" href={postHref(post)} aria-label={post.data.title} />
+              <div class="verdict-row__body">
+                <p class="label txt-dim">{post.data.review.product.brand}</p>
+                <h3 class="txt-h5 verdict-row__title">{post.data.review.product.name}</h3>
+                <RatingStars value={reviewRating(post.data.review)} showValue />
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}

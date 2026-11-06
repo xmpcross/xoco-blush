@@ -1,0 +1,57 @@
+---
+interface Props {
+  title: string;
+  eyebrow?: string;
+  description?: string;
+  meta?: string;
+  /** Set false when the block below opens with its own rule. */
+  divider?: boolean;
+  class?: string;
+}
+
+const {
+  title,
+  eyebrow,
+  description,
+  meta,
+  divider = true,
+  class: className = "",
+} = Astro.props;
+---
+
+<header
+  class:list={["page-header opener", !divider && "page-header--flush", className]}
+>
+  {eyebrow && <p class="label page-header__eyebrow">{eyebrow}</p>}
+  <h1 class="txt-h1">{title}</h1>
+  {description && <p class="txt-l txt-dim page-header__description">{description}</p>}
+  {meta && <p class="txt-s txt-dim">{meta}</p>}
+  <slot />
+</header>
+
+<style>
+  .page-header {
+    display: grid;
+    gap: 0.9rem;
+    justify-items: start;
+    border-bottom: 1px solid var(--border);
+    padding-block: clamp(2.5rem, 6vw, 4.5rem) 2rem;
+  }
+
+  .page-header--flush {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .page-header__eyebrow {
+    color: var(--accent);
+  }
+
+  .page-header .txt-h1 {
+    max-width: 20ch;
+  }
+
+  .page-header__description {
+    max-width: 48ch;
+  }
+</style>

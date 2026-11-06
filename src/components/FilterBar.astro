@@ -1,0 +1,33 @@
+---
+import { categories, categorySlug, type Category } from "@/lib/posts";
+
+/**
+ * Horizontal section switcher for archive pages. Each pill carries its own
+ * section's tone, so hovering the row previews the colour the page will take.
+ * It scrolls rather than wraps, so a publication can define a dozen sections
+ * without the bar growing rows.
+ */
+interface Props {
+  /** Highlights the matching section; omit on "All posts". */
+  active?: Category;
+  allActive?: boolean;
+  class?: string;
+}
+
+const { active, allActive = false, class: className = "" } = Astro.props;
+---
+
+<nav class:list={["filter-bar", className]} aria-label="Sections">
+  <a class:list={["chip", allActive && "chip--active"]} href="/posts/">All stories</a>
+  {
+    categories.map((category) => (
+      <a
+        class:list={["chip", active === category && "chip--active"]}
+        href={`/category/${categorySlug(category)}/`}
+        aria-current={active === category ? "page" : undefined}
+      >
+        {category}
+      </a>
+    ))
+  }
+</nav>

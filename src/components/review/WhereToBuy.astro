@@ -1,0 +1,70 @@
+---
+import Icon from "@/components/ui/Icon.astro";
+import { siteConfig } from "@/config/site";
+import type { ReviewData } from "@/lib/reviews";
+
+/**
+ * Where to buy the product a review just judged.
+ *
+ * It sits after the breakdown rather than before the verdict, deliberately: a
+ * reader gets the answer, the argument, and the arithmetic before they are
+ * offered a way to spend money. A buy box above the verdict turns a review
+ * into a listing.
+ *
+ * The first retailer is the recommended one and takes the filled button; the
+ * rest are alternatives and take outlined ones, so the row reads as a
+ * preference rather than as a price-comparison table the theme cannot keep
+ * current. There is no price anywhere in it for the same reason the review
+ * carries none — see `src/content.config.ts`.
+ *
+ * Every link is `rel="sponsored nofollow noopener"`, which is what search
+ * engines expect of a paid link and what keeps the disclosure underneath
+ * honest rather than decorative.
+ */
+interface Props {
+  review: ReviewData;
+  class?: string;
+}
+
+const { review, class: className = "", ...rest } = Astro.props;
+const affiliate = siteConfig.affiliate;
+const retailers = review.retailers;
+---
+
+{
+  retailers.length > 0 && (
+    <section class:list={["buybox", className]} aria-labelledby="buybox-title" {...rest}>
+      <h2 class="txt-h4 buybox__title" id="buybox-title">
+        Where to buy the {review.product.name}
+      </h2>
+
+      <ul class="buybox__list">
+        {retailers.map((retailer, index) => (
+          <li class="buybox__row">
+            <div class="buybox__seller">
+              <p class="txt-m buybox__name">{retailer.name}</p>
+              {retailer.note && <p class="txt-s txt-dim buybox__note">{retailer.note}</p>}
+            </div>
+            <a
+              class:list={["btn buybox__cta", index > 0 && "btn--line"]}
+              href={retailer.url}
+              target="_blank"
+              rel="sponsored nofollow noopener"
+            >
+              {affiliate.ctaLabel}
+              {/* The name is in the row above, but a link that opens a new tab
+                  and leaves the site should say so to a screen reader too. */}
+              <span class="sr-only">{` at ${retailer.name} (opens in a new tab)`}</span>
+              <Icon name="arrow-up-right" size={14} />
+            </a>
+          </li>
+        ))}
+      </ul>
+
+      <p class="txt-s txt-dim buybox__disclosure">
+        {affiliate.disclosure}{" "}
+        <a href={affiliate.disclosureHref}>{affiliate.disclosureLabel}</a>.
+      </p>
+    </section>
+  )
+}

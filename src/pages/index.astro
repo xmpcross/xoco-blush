@@ -1,0 +1,163 @@
+---
+import { getCollection } from "astro:content";
+import CtaPanel from "@/components/CtaPanel.astro";
+import EditorSpotlight from "@/components/EditorSpotlight.astro";
+import HighlightColumns from "@/components/HighlightColumns.astro";
+import HomeHero from "@/components/HomeHero.astro";
+import PopularRail from "@/components/PopularRail.astro";
+import PostCard from "@/components/PostCard.astro";
+import ReviewSpotlight from "@/components/ReviewSpotlight.astro";
+import SectionHeader from "@/components/SectionHeader.astro";
+import SiteFooter from "@/components/SiteFooter.astro";
+import SiteHeader from "@/components/SiteHeader.astro";
+import SectionPanels from "@/components/SectionPanels.astro";
+import StandardsBand from "@/components/StandardsBand.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { REVIEW_CATEGORY } from "@/config/categories";
+import { siteConfig } from "@/config/site";
+import {
+  categories,
+  categorySlug,
+  excludePosts,
+  getEditorsPicks,
+  getFeatured,
+  getTrending,
+  visiblePosts,
+} from "@/lib/posts";
+import { isReview } from "@/lib/reviews";
+
+const allPosts = visiblePosts(await getCollection("posts"));
+
+/*
+ * The front page is dealt from the top down: each editorial block takes the
+ * next slice of the archive, so nothing repeats between them. Only the popular
+ * rail near the middle draws from the whole archive again — a "most popular"
+ * list is a ranking, so a story placing there while also running further up the
+ * page is the right answer, not a duplicate.
+ */
+let pool = allPosts;
+
+/** Hands a block its stories and takes them out of circulation. */
+const take = (chosen: typeof pool) => {
+  pool = excludePosts(pool, chosen);
+  return chosen;
+};
+
+/** The banner: the newest three posts, latest first. */
+const heroSlides = take(getFeatured(pool, 3));
+/**
+ * The five newest scored reviews: one for the panel, four for the row under
+ * it. Dealt straight after the banner, ahead of the blocks that sit above it
+ * on the page, so the lede and the picks cannot use the reviews up first and
+ * leave the row short.
+ */
+const verdicts = take(pool.filter(isReview).slice(0, 5));
+/** The four short stories under the banner. */
+const lede = take(getFeatured(pool, 4));
+/** Flagged `editorsPick: true` in frontmatter; falls back to the newest left. */
+const picks = take(getEditorsPicks(pool, 4));
+/** The main grid — two rows of four. */
+const latest = take(pool.slice(0, 8));
+/*
+ * Nine stories for three photographs. It runs last of the dealt blocks, so it
+ * is where the tail of the archive surfaces.
+ */
+const highlights = take(pool.slice(0, 9));
+
+/*
+ * The rail draws from the whole archive rather than the pool, and off the
+ * `trending` flag: a story placing here while also running further up the page
+ * is the right answer, not a duplicate. Wire real analytics in here if you have
+ * them — nothing else on the page depends on how this list is ordered.
+ */
+const popular = getTrending(allPosts, 8);
+---
+
+<BaseLayout bodyClass="has-overlay-header">
+  <SiteHeader posts={allPosts} />
+  <main id="content">
+    <h1 class="sr-only">{siteConfig.name} — {siteConfig.tagline}</h1>
+
+    <div class="section">
+      <HomeHero posts={heroSlides} strip={lede} />
+    </div>
+
+    {
+      popular.length > 0 && (
+        <section class="container section" aria-labelledby="home-popular">
+          <PopularRail posts={popular} title="Most popular" id="home-popular" />
+        </section>
+      )
+    }
+
+    {
+      picks.length > 0 && (
+        <section class="container section" aria-labelledby="home-picks">
+          <SectionHeader title="Editor's picks" id="home-picks" />
+          <EditorSpotlight posts={picks} />
+        </section>
+      )
+    }
+
+    {
+      verdicts.length > 0 && (
+        <section class="container section" aria-labelledby="home-verdicts">
+          <SectionHeader
+            title="The verdicts"
+            href={`/category/${categorySlug(REVIEW_CATEGORY)}/`}
+            linkLabel="All reviews"
+            id="home-verdicts"
+          />
+          <ReviewSpotlight posts={verdicts} />
+        </section>
+      )
+    }
+
+    <div class="section">
+      <StandardsBand />
+    </div>
+
+    {
+      latest.length > 0 && (
+        <section class="container section" aria-labelledby="home-latest">
+          <SectionHeader
+            title="Latest posts"
+            count={`${allPosts.length} in the archive`}
+            href="/posts/"
+            linkLabel="Full archive"
+            id="home-latest"
+          />
+          <div class="grid-cards grid-cards--4">
+            {latest.map((post) => (
+              <PostCard post={post} headingLevel="h3" dateOnly />
+            ))}
+          </div>
+        </section>
+      )
+    }
+
+    {
+      highlights.length > 0 && (
+        <section class="container section" aria-labelledby="home-highlights">
+          <SectionHeader title="Highlights" id="home-highlights" />
+          <HighlightColumns posts={highlights} />
+        </section>
+      )
+    }
+
+    <section class="container section" aria-labelledby="home-sections">
+      <SectionHeader
+        title="Browse by section"
+        href="/posts/"
+        linkLabel="Everything"
+        id="home-sections"
+      />
+      <SectionPanels categories={categories} posts={allPosts} />
+    </section>
+
+    <div class="container section">
+      <CtaPanel />
+    </div>
+  </main>
+  <SiteFooter />
+</BaseLayout>

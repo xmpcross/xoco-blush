@@ -1,0 +1,105 @@
+---
+import { Image } from "astro:assets";
+import Icon from "@/components/ui/Icon.astro";
+import RatingStars from "@/components/ui/RatingStars.astro";
+import { bylineShort, formatDate, postHref, readMinutes, type Post } from "@/lib/posts";
+import { postRating } from "@/lib/reviews";
+
+/**
+ * One line of the archive ledger: date, section, headline, byline, thumbnail.
+ * The date column is the spine every listing page shares, so an index of ten
+ * stories scans in a single vertical sweep.
+ *
+ * The whole row is one link rather than a headline link plus an overlay, so
+ * there is a single tab stop per story and no nested interactive elements.
+ * That is also why the section reads as a plain label here and not as the
+ * linked tag it is on a card.
+ */
+interface Props {
+  post: Post;
+  showExcerpt?: boolean;
+  /** Off on section pages, where the date is the useful fact. */
+  showReadTime?: boolean;
+  /** Off on the front page, where the date column is enough. */
+  showByline?: boolean;
+  showThumb?: boolean;
+  eager?: boolean;
+  headingLevel?: "h2" | "h3";
+  class?: string;
+}
+
+const {
+  post,
+  showExcerpt = true,
+  showReadTime = true,
+  showByline = true,
+  showThumb = true,
+  eager = false,
+  headingLevel = "h3",
+  class: className = "",
+} = Astro.props;
+
+const data = post.data;
+const Heading = headingLevel;
+/* Only a scored review has one, so every other row is untouched. */
+const rating = postRating(post);
+---
+
+<a class:list={["row", !showThumb && "row--flush", className]} href={postHref(post)}>
+  <p class="label nums row__date">
+    <time datetime={data.date.toISOString()}>{formatDate(data.date)}</time>
+  </p>
+
+  <div class="row__body">
+    <div class="row__head">
+      <span class="tag">{data.category}</span>
+      {rating !== undefined && <RatingStars value={rating} />}
+    </div>
+    <Heading class="txt-h3 row__title">{data.title}</Heading>
+    {showExcerpt && <p class="txt-s txt-dim row__excerpt">{data.excerpt}</p>}
+    <p class="label row__byline meta__facts--ruled">
+      {showByline && (
+        <>
+          {/* The lead-in is grey and the name is not, the same way the credit
+              line reads on every card. */}
+          <span class="txt-dim">Post by</span> {bylineShort(post)}
+          <span class="meta__rule" aria-hidden="true" />
+        </>
+      )}
+      <span class="txt-dim">
+        <time datetime={data.date.toISOString()}>{formatDate(data.date)}</time>
+      </span>
+      {showReadTime && (
+        <>
+          <span class="meta__rule" aria-hidden="true" />
+          <span class="txt-dim">{readMinutes(post)} min read</span>
+        </>
+      )}
+    </p>
+  </div>
+
+  {
+    showThumb && (
+      <div class="row__media">
+        <Image
+          src={data.cover.src}
+          alt=""
+          widths={[180, 280, 400]}
+          sizes="(min-width: 64rem) 152px, 80px"
+          loading={eager ? "eager" : "lazy"}
+          decoding="async"
+        />
+      </div>
+    )
+  }
+
+  <span class="row__arrow" aria-hidden="true">
+    <Icon name="arrow-right" size={16} />
+  </span>
+</a>
+
+<style>
+  .row__byline {
+    margin-top: 0.15rem;
+  }
+</style>

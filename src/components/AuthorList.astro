@@ -1,0 +1,68 @@
+---
+import Avatar from "@/components/ui/Avatar.astro";
+import { authorBio } from "@/config/authors";
+import type { Post } from "@/lib/posts";
+
+interface Props {
+  authors: { slug: string; name: string; role: string; posts: Post[] }[];
+  limit?: number;
+  /** `cells` draws a hairline grid; `list` a single ruled column. */
+  variant?: "cells" | "list";
+  columns?: 2 | 3 | 4;
+  /** Prints each contributor's standfirst. The masthead does; a rail does not. */
+  showBio?: boolean;
+  class?: string;
+}
+
+const {
+  authors,
+  limit = authors.length,
+  variant = "cells",
+  columns = 3,
+  showBio = false,
+  class: className = "",
+} = Astro.props;
+const list = authors.slice(0, limit);
+---
+
+{
+  list.length > 0 && (
+    <div
+      class:list={[
+        variant === "cells" ? `grid-hairline grid-hairline--${columns}` : "author-column",
+        className,
+      ]}
+    >
+      {list.map((author) => (
+        <a class:list={["author-chip", showBio && "author-chip--full"]} href={`/author/${author.slug}/`}>
+          <Avatar name={author.name} size="lg" class="author-chip__avatar" />
+          <span class="author-chip__body">
+            <span class="txt-h5 author-chip__name">{author.name}</span>
+            <span class="label txt-dim">
+              {author.role} &nbsp;/&nbsp; {String(author.posts.length).padStart(2, "0")}
+            </span>
+            {showBio && authorBio(author.name) && (
+              <span class="txt-s txt-dim author-chip__bio">{authorBio(author.name)}</span>
+            )}
+          </span>
+        </a>
+      ))}
+    </div>
+  )
+}
+
+<style>
+  .author-column {
+    display: grid;
+  }
+
+  .author-column .author-chip {
+    border-top: 1px solid var(--border);
+    padding-inline: 0;
+  }
+
+  .author-column .author-chip:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+</style>

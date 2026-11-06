@@ -1,0 +1,107 @@
+---
+import PostCard from "@/components/PostCard.astro";
+import Icon from "@/components/ui/Icon.astro";
+import type { Post } from "@/lib/posts";
+
+/**
+ * The ranking, as a rail that scrolls sideways.
+ *
+ * A wrapping grid would put the sixth-most-read story directly under the
+ * first, which reads as a second set rather than as a continuation of one
+ * order. Scrolling keeps the sequence on one line, and the half-visible card
+ * at the right edge is what tells a reader the list carries on.
+ *
+ * The arrows page by one viewport of the track and disable themselves at
+ * either end. On touch the rail is swipeable and snaps, so the buttons are
+ * only ever the pointer's route to the same thing.
+ */
+interface Props {
+  posts: Post[];
+  title?: string;
+  href?: string;
+  id?: string;
+  class?: string;
+}
+
+const { posts, title = "Most popular", href, id, class: className = "" } = Astro.props;
+---
+
+{
+  posts.length > 0 && (
+    <div class:list={["rail", className]} data-rail>
+      <div class="section-head section-head--flush">
+        <div class="section-head__bar">
+          <h2 class="section-head__name" id={id}>
+            {title}
+          </h2>
+          <div class="rail-nav">
+            {href && (
+              <a class="section-link" href={href}>
+                View all
+                <Icon name="arrow-right" size={14} />
+              </a>
+            )}
+            <button type="button" class="rail-nav__btn" data-rail-prev aria-label="Scroll back">
+              <Icon name="arrow-left" size={18} />
+            </button>
+            <button
+              type="button"
+              class="rail-nav__btn"
+              data-rail-next
+              aria-label="Scroll forward"
+            >
+              <Icon name="arrow-right" size={18} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="rail__track" data-rail-track>
+        {/* Date only, like every card on the front page. */}
+        {posts.map((post) => (
+          <PostCard post={post} headingLevel="h3" dateOnly />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+<style>
+  /* The heading's own link sits between the title and the arrows, so it takes
+     the row's gap rather than the section rule's. */
+  .rail-nav .section-link {
+    margin-right: 0.5rem;
+  }
+
+  /* One card per swipe on a phone; the headline in the rail is the same size
+     as everywhere else, so the tiles have to be narrower rather than shorter. */
+  .rail :global(.card__title) {
+    font-size: var(--fs-h4);
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>("[data-rail]").forEach((rail) => {
+    const track = rail.querySelector<HTMLElement>("[data-rail-track]");
+    const prev = rail.querySelector<HTMLButtonElement>("[data-rail-prev]");
+    const next = rail.querySelector<HTMLButtonElement>("[data-rail-next]");
+    if (!track || !prev || !next) return;
+
+    /* A whole viewport of the track less one card, so the card that was half
+       off the edge is fully on screen after a page — the reader never has to
+       work out whether they have already seen it. */
+    const step = () => Math.max(track.clientWidth * 0.85, 240);
+
+    const sync = () => {
+      const max = track.scrollWidth - track.clientWidth - 1;
+      prev.disabled = track.scrollLeft <= 0;
+      next.disabled = track.scrollLeft >= max;
+    };
+
+    prev.addEventListener("click", () => track.scrollBy({ left: -step(), behavior: "smooth" }));
+    next.addEventListener("click", () => track.scrollBy({ left: step(), behavior: "smooth" }));
+    track.addEventListener("scroll", sync, { passive: true });
+    window.addEventListener("resize", sync);
+    sync();
+  });
+</script>

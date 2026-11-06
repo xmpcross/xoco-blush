@@ -1,0 +1,67 @@
+---
+import RatingStars from "@/components/ui/RatingStars.astro";
+import { formatRating, RATING_MAX, ratingBandFor } from "@/config/rating";
+import { reviewRating, type ReviewData } from "@/lib/reviews";
+
+/**
+ * The bottom line, printed above the article rather than buried at the end of
+ * it. A reader who sees only this block should still come away with the
+ * product, the rating, the reason for it, and whether it is for them.
+ *
+ * It is one of the few blocks in the theme that gets a border of its own,
+ * because it genuinely is an object rather than a passage of the article.
+ */
+interface Props {
+  review: ReviewData;
+  class?: string;
+}
+
+const { review, class: className = "", ...rest } = Astro.props;
+const rating = reviewRating(review);
+const band = ratingBandFor(rating);
+---
+
+<section class:list={["verdict", className]} aria-labelledby="verdict-title" {...rest}>
+  <div class="verdict__head">
+    <p class="verdict__figure nums">
+      {formatRating(rating)}<span class="verdict__max">/{RATING_MAX}</span>
+    </p>
+
+    <div class="verdict__headline">
+      {/* Named for the document outline and for a screen reader; a reader
+          looking at the block can see what it is. */}
+      <h2 id="verdict-title" class="sr-only">The verdict</h2>
+      <p class="label txt-dim verdict__product">{review.product.name}</p>
+      <RatingStars value={rating} size="lg" class="verdict__stars" />
+      <p class="txt-h3 verdict__band">{band.label}</p>
+      <p class="txt-s txt-dim">{band.meaning}</p>
+    </div>
+  </div>
+
+  <p class="txt-l verdict__body">{review.verdict}</p>
+
+  {
+    (review.buyIf || review.avoidIf) && (
+      <dl class="verdict__calls">
+        {review.buyIf && (
+          <div>
+            <dt class="label verdict__call">Buy it if</dt>
+            <dd class="txt-s">{review.buyIf}</dd>
+          </div>
+        )}
+        {review.avoidIf && (
+          <div>
+            <dt class="label verdict__call">Look elsewhere if</dt>
+            <dd class="txt-s">{review.avoidIf}</dd>
+          </div>
+        )}
+      </dl>
+    )
+  }
+
+  {/* Provenance last, and never optional: a reader is entitled to know who
+      paid for the product before they weigh the number above. */}
+  <p class="label txt-dim verdict__foot">
+    Tested over {review.testedOn}. {review.sourcing}
+  </p>
+</section>

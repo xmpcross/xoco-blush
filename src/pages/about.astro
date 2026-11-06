@@ -1,0 +1,160 @@
+---
+import { getCollection } from "astro:content";
+import { Image } from "astro:assets";
+import AuthorList from "@/components/AuthorList.astro";
+import PageHeader from "@/components/PageHeader.astro";
+import SectionHeader from "@/components/SectionHeader.astro";
+import SiteFooter from "@/components/SiteFooter.astro";
+import SiteHeader from "@/components/SiteHeader.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import banner from "@/assets/about-banner.jpg";
+import { siteConfig } from "@/config/site";
+import { categories, getAllAuthors, visiblePosts } from "@/lib/posts";
+
+const allPosts = visiblePosts(await getCollection("posts"));
+const authors = getAllAuthors(allPosts);
+
+/* The photograph under the page header. Swap the file in `src/assets` and
+   the credit here; it doubles as the page's share card. */
+const bannerAlt = "A woman with long dark hair and bare skin, eyes closed, lit softly from the side";
+const bannerCredit = {
+  name: "Artem Podrez",
+  url: "https://www.pexels.com/photo/woman-s-face-in-close-up-photography-7955854/",
+};
+
+const principles = [
+  {
+    title: "Name the active",
+    body: `A formula is a set of choices someone made about concentration, pH and vehicle. ${siteConfig.name} names those first, because a claim only means something next to the thing it was measured against.`,
+  },
+  {
+    title: "Say who it is for",
+    body: "There is no product that suits every face, and a review that implies otherwise is selling. We say plainly who a formula is likely to disappoint.",
+  },
+  {
+    title: "Be honest about the evidence",
+    body: "A story that admits the trial was small is more useful than one that rounds a promising result up to a fact. We mark the edges of what is known.",
+  },
+];
+---
+
+<BaseLayout
+  title="About"
+  description={`About ${siteConfig.name}: what we cover, how we write it, and who files it.`}
+  image={banner}
+  imageAlt={bannerAlt}
+>
+  <SiteHeader posts={allPosts} />
+  <main id="content">
+    <div class="container">
+      <PageHeader
+        eyebrow="About"
+        title={`${siteConfig.name} is a beauty magazine that reads the ingredient list.`}
+        description={siteConfig.bio}
+        meta={`${allPosts.length} stories · ${categories.length} sections · ${authors.length} contributors`}
+      />
+    </div>
+
+    <figure class="container about-banner">
+      <div class="about-banner__media">
+        <Image
+          src={banner}
+          alt={bannerAlt}
+          widths={[720, 1080, 1440, 2000]}
+          sizes="(min-width: 90rem) 84rem, 100vw"
+          loading="eager"
+          fetchpriority="high"
+          decoding="async"
+        />
+      </div>
+      <figcaption class="txt-xs txt-dim">
+        Photo credit: <a class="about-banner__credit" href={bannerCredit.url} rel="noreferrer"
+          >{bannerCredit.name}</a
+        >
+      </figcaption>
+    </figure>
+
+    <section class="container section section-top" aria-labelledby="about-principles">
+      <SectionHeader title="How we work" id="about-principles" />
+      <div class="grid-columns" style="--cols:3">
+        {
+          principles.map((principle, index) => (
+            <div class="about-principle">
+              <p class="label about-principle__index">{String(index + 1).padStart(2, "0")}</p>
+              <h3 class="txt-h3">{principle.title}</h3>
+              <p class="txt-s txt-dim">{principle.body}</p>
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="container section" aria-labelledby="about-contributors">
+      <SectionHeader
+        title="The desk"
+        count={String(authors.length).padStart(2, "0")}
+        href="/author/"
+        linkLabel="All contributors"
+        id="about-contributors"
+      />
+      <AuthorList authors={authors} columns={3} />
+    </section>
+  </main>
+  <SiteFooter />
+</BaseLayout>
+
+<style>
+  .about-banner {
+    display: grid;
+    gap: 0.6rem;
+    margin: clamp(1.5rem, 4vw, 2.5rem) auto 0;
+  }
+
+  .about-banner__media {
+    overflow: hidden;
+    aspect-ratio: 16 / 9;
+    border-radius: var(--r-lg);
+    background: var(--muted);
+  }
+
+  /* Cropped from a 16:9 frame; the eyes sit high, so the crop favours the top. */
+  .about-banner__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 30%;
+    animation: settle-in 1.4s var(--ease-out) backwards;
+  }
+
+  .about-banner__credit {
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+    transition: color 0.2s ease;
+  }
+
+  .about-banner__credit:hover {
+    color: var(--accent);
+  }
+
+  @media (min-width: 48rem) {
+    .about-banner__media {
+      aspect-ratio: 2 / 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .about-banner__media img {
+      animation: none;
+    }
+  }
+
+  .about-principle {
+    display: grid;
+    align-content: start;
+    gap: 0.75rem;
+  }
+
+  .about-principle__index {
+    color: var(--accent);
+  }
+</style>

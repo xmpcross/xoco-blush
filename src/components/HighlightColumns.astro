@@ -1,0 +1,50 @@
+---
+import PostBrief from "@/components/PostBrief.astro";
+import PostCard from "@/components/PostCard.astro";
+import type { Post } from "@/lib/posts";
+
+/**
+ * Three columns, each opening with a picture card and continuing as text-only
+ * briefs under hairlines.
+ *
+ * The posts arrive as one flat list and are dealt across the columns here
+ * rather than by the page, so a short archive degrades sensibly: with seven
+ * stories the third column simply carries one brief instead of two, and with
+ * four it disappears. Dealing is done column by column — the first three go to
+ * the three column heads — so the newest stories are the ones that get the
+ * photographs.
+ */
+interface Props {
+  posts: Post[];
+  /** Stories per column, the picture card included. */
+  perColumn?: number;
+  columns?: number;
+  class?: string;
+}
+
+const { posts, perColumn = 3, columns = 3, class: className = "" } = Astro.props;
+
+/* Column-major: heads first, then the briefs under them, so position 0, 1 and
+   2 of the list become the three cards at the top of the block. */
+const groups = Array.from({ length: columns }, (_, column) =>
+  Array.from({ length: perColumn }, (_, row) => posts[row * columns + column]).filter(Boolean),
+).filter((group) => group.length > 0);
+---
+
+{
+  groups.length > 0 && (
+    <div class:list={["highlights", className]}>
+      {groups.map((group, index) => (
+        <div class="highlights__col">
+          {group.map((post, position) =>
+            position === 0 ? (
+              <PostCard post={post} headingLevel="h3" eager={index === 0} dateOnly />
+            ) : (
+              <PostBrief post={post} headingLevel="h3" />
+            ),
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
